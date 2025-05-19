@@ -12,6 +12,8 @@
 <table class="table">
     <thead>
         <tr>
+            <th>Zdjęcie</th>
+
             <th>
                 @Html.DisplayNameFor(model => model.Name)
             </th>
@@ -45,6 +47,13 @@
     <tbody>
 @foreach (var item in Model) {
         <tr>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ImagePath))
+                    {
+                        <img src="@item.ImagePath" alt="Hotel image" style="max-height: 100px;" />
+                    }
+                </td>
+
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
             </td>

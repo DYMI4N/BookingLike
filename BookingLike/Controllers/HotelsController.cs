@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BookingLike.Data;
 using BookingLike.Models;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+
 
 namespace BookingLike.Controllers
 {
@@ -54,16 +57,34 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Address,City,Country,PricePerNight,Description,Amenities,ContactNumber,Email")] Hotel hotel)
+        public async Task<IActionResult> Create(Hotel hotel, IFormFile imageFile)
         {
-            if (ModelState.IsValid)
+            if (imageFile == null || imageFile.Length == 0)
             {
-                _context.Add(hotel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                ViewBag.ImageError = "Zdjęcie hotelu jest wymagane.";
+                return View(hotel);
             }
-            return View(hotel);
+
+            var fileName = Path.GetFileName(imageFile.FileName);
+            var filePath = Path.Combine("wwwroot/uploads", fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
+            hotel.ImagePath = "/uploads/" + fileName;
+
+            _context.Add(hotel);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
+
+
+
+
+
 
         // GET: Hotels/Edit/5
         public async Task<IActionResult> Edit(int? id)
