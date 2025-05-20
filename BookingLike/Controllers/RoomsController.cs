@@ -7,28 +7,26 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BookingLike.Data;
 using BookingLike.Models;
-using Microsoft.AspNetCore.Http;
-using System.IO;
-
 
 namespace BookingLike.Controllers
 {
-    public class HotelsController : Controller
+    public class RoomsController : Controller
     {
         private readonly BookingLikeDbContext _context;
 
-        public HotelsController(BookingLikeDbContext context)
+        public RoomsController(BookingLikeDbContext context)
         {
             _context = context;
         }
 
-        // GET: Hotels
+        // GET: Rooms
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Hotels.ToListAsync());
+            var bookingLikeDbContext = _context.Rooms.Include(r => r.Hotel);
+            return View(await bookingLikeDbContext.ToListAsync());
         }
 
-        // GET: Hotels/Details/5
+        // GET: Rooms/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -36,58 +34,56 @@ namespace BookingLike.Controllers
                 return NotFound();
             }
 
-            var hotel = await _context.Hotels
-                .Include(h => h.Rooms) // Include related rooms
+            var room = await _context.Rooms
+                .Include(r => r.Hotel)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (hotel == null)
+            if (room == null)
             {
                 return NotFound();
             }
 
-            return View(hotel);
+            return View(room);
         }
 
-        // GET: Hotels/Create
-        public IActionResult Create()
+        // GET: Rooms/Create
+        public IActionResult Create(int hotelId)
         {
-            return View();
+            var room = new Room
+            {
+                HotelId = hotelId
+            };
+
+            return View(room);
         }
 
-        // POST: Hotels/Create
+
+        // POST: Rooms/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Hotel hotel, IFormFile imageFile)
+        public async Task<IActionResult> Create(Room room, IFormFile imageFile)
         {
-            if (imageFile == null || imageFile.Length == 0)
+            if (imageFile != null && imageFile.Length > 0)
             {
-                ViewBag.ImageError = "Zdjęcie hotelu jest wymagane.";
-                return View(hotel);
+                var fileName = Path.GetFileName(imageFile.FileName);
+                var filePath = Path.Combine("wwwroot/uploads", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(stream);
+                }
+
+                room.ImagePath = "/uploads/" + fileName;
             }
 
-            var fileName = Path.GetFileName(imageFile.FileName);
-            var filePath = Path.Combine("wwwroot/uploads", fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(stream);
-            }
-
-            hotel.ImagePath = "/uploads/" + fileName;
-
-            _context.Add(hotel);
+            _context.Add(room);
             await _context.SaveChangesAsync();
-
             return RedirectToAction(nameof(Index));
         }
 
 
-
-
-
-
-        // GET: Hotels/Edit/5
+        // GET: Rooms/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -95,22 +91,23 @@ namespace BookingLike.Controllers
                 return NotFound();
             }
 
-            var hotel = await _context.Hotels.FindAsync(id);
-            if (hotel == null)
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null)
             {
                 return NotFound();
             }
-            return View(hotel);
+            ViewData["HotelId"] = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+            return View(room);
         }
 
-        // POST: Hotels/Edit/5
+        // POST: Rooms/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Address,City,Country,PricePerNight,Description,Amenities,ContactNumber,Email")] Hotel hotel)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,RoomType,Capacity,PricePerNight,Description,Amenities,HotelId,ImagePath")] Room room)
         {
-            if (id != hotel.Id)
+            if (id != room.Id)
             {
                 return NotFound();
             }
@@ -119,12 +116,12 @@ namespace BookingLike.Controllers
             {
                 try
                 {
-                    _context.Update(hotel);
+                    _context.Update(room);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!HotelExists(hotel.Id))
+                    if (!RoomExists(room.Id))
                     {
                         return NotFound();
                     }
@@ -135,10 +132,11 @@ namespace BookingLike.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(hotel);
+            ViewData["HotelId"] = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+            return View(room);
         }
 
-        // GET: Hotels/Delete/5
+        // GET: Rooms/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -146,34 +144,35 @@ namespace BookingLike.Controllers
                 return NotFound();
             }
 
-            var hotel = await _context.Hotels
+            var room = await _context.Rooms
+                .Include(r => r.Hotel)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (hotel == null)
+            if (room == null)
             {
                 return NotFound();
             }
 
-            return View(hotel);
+            return View(room);
         }
 
-        // POST: Hotels/Delete/5
+        // POST: Rooms/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var hotel = await _context.Hotels.FindAsync(id);
-            if (hotel != null)
+            var room = await _context.Rooms.FindAsync(id);
+            if (room != null)
             {
-                _context.Hotels.Remove(hotel);
+                _context.Rooms.Remove(room);
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool HotelExists(int id)
+        private bool RoomExists(int id)
         {
-            return _context.Hotels.Any(e => e.Id == id);
+            return _context.Rooms.Any(e => e.Id == id);
         }
     }
 }

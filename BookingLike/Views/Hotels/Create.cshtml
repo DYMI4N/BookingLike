@@ -65,6 +65,11 @@
                 <label>Zdjęcie</label>
                 <input type="file" name="imageFile" class="form-control" />
             </div>
+            @if (ViewBag.ImageError != null)
+            {
+                <span class="text-danger">@ViewBag.ImageError</span>
+            }
+
 
         </form>
     </div>

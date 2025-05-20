@@ -13,5 +13,7 @@
         public string ContactNumber { get; set; }
         public string Email { get; set; }
         public string ImagePath { get; set; } // Path to the hotel image
+        public ICollection<Room> Rooms { get; set; }
+
     }
 }

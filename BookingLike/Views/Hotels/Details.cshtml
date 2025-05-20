@@ -16,6 +16,61 @@
         </div>
     }
     <dl class="row">
+        <p>
+            <a asp-controller="Rooms" asp-action="Create" asp-route-hotelId="@Model.Id" class="btn btn-primary">
+                Dodaj pokój
+            </a>
+        </p>
+
+        <h4>Dostępne pokoje</h4>
+
+        @if (Model.Rooms != null && Model.Rooms.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Typ pokoju</th>
+                        <th>Pojemność</th>
+                        <th>Cena za noc</th>
+                        <th>Opis</th>
+                        <th>Szczegóły</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var room in Model.Rooms)
+                    {
+                        <tr>
+                            <td>@room.RoomType</td>
+                            <td>@room.Capacity</td>
+                            <td>@room.PricePerNight zł</td>
+                            <td>@room.Description</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#roomModal"
+                                        data-roomtype="@room.RoomType"
+                                        data-capacity="@room.Capacity"
+                                        data-price="@room.PricePerNight"
+                                        data-description="@room.Description"
+                                        data-amenities="@room.Amenities"
+                                        data-image="@room.ImagePath">
+                                    Zobacz szczegóły
+                                </button>
+
+                            </td>
+                        </tr>
+                    }
+
+
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>Brak pokoi przypisanych do tego hotelu.</p>
+        }
+
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Name)
         </dt>
@@ -76,3 +131,42 @@
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
     <a asp-action="Index">Back to List</a>
 </div>
+
+<div class="modal fade" id="roomModal" tabindex="-1" aria-labelledby="roomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Szczegóły pokoju</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="modalImage" src="" alt="Zdjęcie pokoju" style="max-width: 100%; max-height: 300px;" />
+                </div>
+                <p><strong>Typ pokoju:</strong> <span id="modalRoomType"></span></p>
+                <p><strong>Pojemność:</strong> <span id="modalCapacity"></span></p>
+                <p><strong>Cena:</strong> <span id="modalPrice"></span> zł</p>
+                <p><strong>Opis:</strong> <span id="modalDescription"></span></p>
+                <p><strong>Udogodnienia:</strong> <span id="modalAmenities"></span></p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        var modal = document.getElementById('roomModal');
+        modal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('modalRoomType').textContent = button.getAttribute('data-roomtype');
+            document.getElementById('modalCapacity').textContent = button.getAttribute('data-capacity');
+            document.getElementById('modalPrice').textContent = button.getAttribute('data-price');
+            document.getElementById('modalDescription').textContent = button.getAttribute('data-description');
+            document.getElementById('modalAmenities').textContent = button.getAttribute('data-amenities');
+            document.getElementById('modalImage').src = button.getAttribute('data-image');
+        });
+    </script>
+}
+
