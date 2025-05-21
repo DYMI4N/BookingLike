@@ -58,6 +58,12 @@ namespace BookingLike.Areas.Identity.Pages.Account.Manage
             [Phone]
             [Display(Name = "Phone number")]
             public string PhoneNumber { get; set; }
+
+            [Required]
+            [Display(Name = "Nazwa użytkownika")]
+            public string Username { get; set; }
+
+
         }
 
         private async Task LoadAsync(IdentityUser user)
@@ -69,8 +75,10 @@ namespace BookingLike.Areas.Identity.Pages.Account.Manage
 
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber,
+                Username = userName
             };
+
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -98,6 +106,16 @@ namespace BookingLike.Areas.Identity.Pages.Account.Manage
                 await LoadAsync(user);
                 return Page();
             }
+            if (user.UserName != Input.Username)
+            {
+                var setUserNameResult = await _userManager.SetUserNameAsync(user, Input.Username);
+                if (!setUserNameResult.Succeeded)
+                {
+                    StatusMessage = "Unexpected error when trying to set username.";
+                    return RedirectToPage();
+                }
+            }
+
 
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
             if (Input.PhoneNumber != phoneNumber)
