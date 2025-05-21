@@ -1,9 +1,11 @@
 ﻿using BookingLike.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace BookingLike.Data
 {
-    public class BookingLikeDbContext : DbContext
+    public class BookingLikeDbContext : IdentityDbContext<IdentityUser>
     {
         public BookingLikeDbContext(DbContextOptions<BookingLikeDbContext> options)
             : base(options)
