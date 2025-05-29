@@ -58,6 +58,15 @@
                                 </button>
 
                             </td>
+                            <td>
+                                <a asp-controller="Reservations"
+                                   asp-action="Create"
+                                   asp-route-roomId="@room.Id"
+                                   class="btn btn-success">
+                                    Zarezerwuj
+                                </a>
+                            </td>
+
                         </tr>
                     }
 
