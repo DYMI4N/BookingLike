@@ -77,8 +77,13 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,StartDate,EndDate,RoomId,UserId,Status,TotalPrice,CreatedAt")] Reservation reservation)
+        public async Task<IActionResult> Create(Reservation reservation)
         {
+            // Usuwamy wymaganie pól, które będą przypisane ręcznie
+            ModelState.Remove("User");
+            ModelState.Remove("UserId");
+            ModelState.Remove("Room");
+
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -87,7 +92,9 @@ namespace BookingLike.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
-                reservation.UserId = user.Id; // <- przypisujemy ręcznie tutaj
+                reservation.UserId = user.Id;
+                reservation.CreatedAt = DateTime.Now;
+                reservation.Status = "Pending";
 
                 _context.Add(reservation);
                 await _context.SaveChangesAsync();
@@ -96,6 +103,7 @@ namespace BookingLike.Controllers
 
             return View(reservation);
         }
+
 
 
         // GET: Reservations/Edit/5
