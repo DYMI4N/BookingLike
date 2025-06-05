@@ -4,6 +4,7 @@ using BookingLike.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingLike.Migrations
 {
     [DbContext(typeof(BookingLikeDbContext))]
-    partial class BookingLikeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250604170115_DodanoAmenity")]
+    partial class DodanoAmenity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,28 +194,6 @@ namespace BookingLike.Migrations
                     b.HasIndex("HotelId");
 
                     b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("BookingLike.Models.RoomImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ImagePath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RoomId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoomId");
-
-                    b.ToTable("RoomImages");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -477,17 +458,6 @@ namespace BookingLike.Migrations
                     b.Navigation("Hotel");
                 });
 
-            modelBuilder.Entity("BookingLike.Models.RoomImage", b =>
-                {
-                    b.HasOne("BookingLike.Models.Room", "Room")
-                        .WithMany("Images")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Room");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -542,11 +512,6 @@ namespace BookingLike.Migrations
             modelBuilder.Entity("BookingLike.Models.Hotel", b =>
                 {
                     b.Navigation("Rooms");
-                });
-
-            modelBuilder.Entity("BookingLike.Models.Room", b =>
-                {
-                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

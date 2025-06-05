@@ -36,6 +36,7 @@ namespace BookingLike.Controllers
 
             var room = await _context.Rooms
                 .Include(r => r.Hotel)
+                .Include(r => r.Images)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (room == null)
             {
@@ -48,6 +49,10 @@ namespace BookingLike.Controllers
         // GET: Rooms/Create
         public IActionResult Create(int hotelId)
         {
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem { Text = a.Name, Value = a.Id.ToString() })
+                .ToList();
+
             var room = new Room
             {
                 HotelId = hotelId
@@ -57,30 +62,54 @@ namespace BookingLike.Controllers
         }
 
 
+
         // POST: Rooms/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Room room, IFormFile imageFile)
+        public async Task<IActionResult> Create(Room room, List<IFormFile> ImageFiles, List<int> SelectedAmenityIds)
         {
-            if (imageFile != null && imageFile.Length > 0)
+            if (ImageFiles != null && ImageFiles.Count > 0)
             {
-                var fileName = Path.GetFileName(imageFile.FileName);
-                var filePath = Path.Combine("wwwroot/uploads", fileName);
+                var uploadsDir = Path.Combine("wwwroot/uploads");
+                if (!Directory.Exists(uploadsDir))
+                    Directory.CreateDirectory(uploadsDir);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // zapisz zdjęcia i przypisz pierwszy jako główny
+                var imagePaths = new List<string>();
+
+                foreach (var file in ImageFiles)
                 {
-                    await imageFile.CopyToAsync(stream);
+                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(uploadsDir, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    imagePaths.Add("/uploads/" + fileName);
                 }
 
-                room.ImagePath = "/uploads/" + fileName;
+                // główne zdjęcie
+                room.ImagePath = imagePaths.First();
+
+                // galeria
+                room.Images = imagePaths.Select(p => new RoomImage { ImagePath = p }).ToList();
             }
+
+            // udogodnienia
+            room.Amenities = _context.Amenities
+                .Where(a => SelectedAmenityIds.Contains(a.Id))
+                .ToList();
 
             _context.Add(room);
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
+
 
 
         // GET: Rooms/Edit/5
@@ -91,13 +120,25 @@ namespace BookingLike.Controllers
                 return NotFound();
             }
 
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _context.Rooms
+                .Include(r => r.Amenities)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
             if (room == null)
             {
                 return NotFound();
             }
-            ViewData["HotelId"] = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+            ViewBag.HotelId = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem
+                {
+                    Text = a.Name,
+                    Value = a.Id.ToString(),
+                    Selected = room.Amenities.Any(ra => ra.Id == a.Id)
+                }).ToList();
+
             return View(room);
+
         }
 
         // POST: Rooms/Edit/5
@@ -105,7 +146,7 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,RoomType,Capacity,PricePerNight,Description,Amenities,HotelId,ImagePath")] Room room)
+        public async Task<IActionResult> Edit(int id, Room room, List<int> SelectedAmenityIds)
         {
             if (id != room.Id)
             {
@@ -116,8 +157,28 @@ namespace BookingLike.Controllers
             {
                 try
                 {
-                    _context.Update(room);
+                    var roomToUpdate = await _context.Rooms
+                        .Include(r => r.Amenities)
+                        .FirstOrDefaultAsync(r => r.Id == id);
+
+                    if (roomToUpdate == null)
+                        return NotFound();
+
+                    // Zaktualizuj dane podstawowe
+                    roomToUpdate.RoomType = room.RoomType;
+                    roomToUpdate.Capacity = room.Capacity;
+                    roomToUpdate.PricePerNight = room.PricePerNight;
+                    roomToUpdate.Description = room.Description;
+                    roomToUpdate.HotelId = room.HotelId;
+                    roomToUpdate.ImagePath = room.ImagePath;
+
+                    // Zaktualizuj udogodnienia
+                    roomToUpdate.Amenities.Clear();
+                    roomToUpdate.Amenities = _context.Amenities
+                        .Where(a => SelectedAmenityIds.Contains(a.Id)).ToList();
+
                     await _context.SaveChangesAsync();
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -132,7 +193,17 @@ namespace BookingLike.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["HotelId"] = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+
+            ViewBag.HotelId = new SelectList(_context.Hotels, "Id", "Id", room.HotelId);
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem
+                {
+                    Text = a.Name,
+                    Value = a.Id.ToString(),
+                    Selected = SelectedAmenityIds.Contains(a.Id)
+                }).ToList();
+
+
             return View(room);
         }
 

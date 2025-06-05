@@ -8,9 +8,26 @@
 
 <h4>Room</h4>
 <hr />
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <strong>Błędy walidacji:</strong>
+        <ul>
+            @foreach (var modelState in ViewData.ModelState.Values)
+            {
+                foreach (var error in modelState.Errors)
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            }
+        </ul>
+    </div>
+}
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Edit">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
             <div class="form-group">
@@ -33,11 +50,32 @@
                 <input asp-for="Description" class="form-control" />
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="Amenities" class="control-label"></label>
-                <input asp-for="Amenities" class="form-control" />
-                <span asp-validation-for="Amenities" class="text-danger"></span>
+            <button type="button" class="btn btn-secondary mb-2" data-bs-toggle="modal" data-bs-target="#amenitiesModal">
+                Edytuj udogodnienia
+            </button>
+            <div class="modal fade" id="amenitiesModal" tabindex="-1" aria-labelledby="amenitiesModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="amenitiesModalLabel">Wybierz udogodnienia</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+                        </div>
+                        <div class="modal-body">
+                            @foreach (var amenity in ViewBag.Amenities as List<SelectListItem>)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="SelectedAmenityIds" value="@amenity.Value" @(amenity.Selected ? "checked" : "") />
+                                    <label class="form-check-label">@amenity.Text</label>
+                                </div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Zatwierdź</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
                 <label asp-for="HotelId" class="control-label"></label>
                 <select asp-for="HotelId" class="form-control" asp-items="ViewBag.HotelId"></select>

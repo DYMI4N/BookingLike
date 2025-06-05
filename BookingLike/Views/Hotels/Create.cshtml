@@ -23,30 +23,20 @@
                 <input asp-for="Address" class="form-control" />
                 <span asp-validation-for="Address" class="text-danger"></span>
             </div>
+
             <div class="form-group">
-                <label asp-for="City" class="control-label"></label>
-                <input asp-for="City" class="form-control" />
-                <span asp-validation-for="City" class="text-danger"></span>
+                <label for="autocompleteCity">Miasto</label>
+                <input type="text" id="autocompleteCity" class="form-control" placeholder="Wpisz miasto" />
             </div>
-            <div class="form-group">
-                <label asp-for="Country" class="control-label"></label>
-                <input asp-for="Country" class="form-control" />
-                <span asp-validation-for="Country" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="PricePerNight" class="control-label"></label>
-                <input asp-for="PricePerNight" class="form-control" />
-                <span asp-validation-for="PricePerNight" class="text-danger"></span>
-            </div>
+
+            <input type="hidden" asp-for="City" />
+            <input type="hidden" asp-for="Country" />
+
+
             <div class="form-group">
                 <label asp-for="Description" class="control-label"></label>
                 <input asp-for="Description" class="form-control" />
                 <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Amenities" class="control-label"></label>
-                <input asp-for="Amenities" class="form-control" />
-                <span asp-validation-for="Amenities" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="ContactNumber" class="control-label"></label>
@@ -69,6 +59,29 @@
             {
                 <span class="text-danger">@ViewBag.ImageError</span>
             }
+            <!-- Przycisk otwierający modal -->
+            <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#amenitiesModal">
+                Dodaj udogodnienia
+            </button>
+
+            <!-- Modal z checkboxami -->
+            <div class="modal fade" id="amenitiesModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content p-3">
+                        <h5 class="mb-3">Udogodnienia</h5>
+                        @foreach (var amenity in ViewBag.Amenities as List<SelectListItem>)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="SelectedAmenityIds" value="@amenity.Value" id="amenity_@amenity.Value" />
+                                <label class="form-check-label" for="amenity_@amenity.Value">@amenity.Text</label>
+                            </div>
+                        }
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
         </form>
@@ -81,4 +94,37 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBudNMCvy-uwHTnSwpsJnugS3jcz5pcU4g&libraries=places"></script>
+    <script>
+        function initAutocomplete() {
+            const input = document.getElementById('autocompleteCity');
+            const options = {
+                types: ['(cities)'],
+                componentRestrictions: { country: 'pl' }
+            };
+            const autocomplete = new google.maps.places.Autocomplete(input, options);
+
+            autocomplete.addListener('place_changed', function () {
+                const place = autocomplete.getPlace();
+
+                let city = '';
+                let country = '';
+                for (const component of place.address_components) {
+                    const types = component.types;
+                    if (types.includes('locality')) {
+                        city = component.long_name;
+                    }
+                    if (types.includes('country')) {
+                        country = component.long_name;
+                    }
+                }
+
+                document.querySelector('input[name="City"]').value = city;
+                document.querySelector('input[name="Country"]').value = country;
+            });
+        }
+
+        window.addEventListener('load', initAutocomplete);
+    </script>
+
 }

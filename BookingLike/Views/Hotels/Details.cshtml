@@ -1,144 +1,146 @@
 ﻿@model BookingLike.Models.Hotel
+@using System.Text.Json
+
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Szczegóły hotelu";
 }
 
-<h1>Details</h1>
-
-<div>
-    <h4>Hotel</h4>
-    <hr />
-    @if (!string.IsNullOrEmpty(Model.ImagePath))
-    {
-        <div class="mb-3">
-            <img src="@Model.ImagePath" alt="Hotel image" style="max-width: 300px;" />
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-6">
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <img src="@Model.ImagePath" class="img-fluid rounded shadow-sm mb-3" alt="Zdjęcie hotelu" />
+            }
+            else
+            {
+                <div class="bg-secondary text-white text-center p-5 rounded">Brak zdjęcia</div>
+            }
         </div>
-    }
-    <dl class="row">
-        <p>
-            <a asp-controller="Rooms" asp-action="Create" asp-route-hotelId="@Model.Id" class="btn btn-primary">
-                Dodaj pokój
-            </a>
-        </p>
 
-        <h4>Dostępne pokoje</h4>
+        <h3 class="mt-4">Prognoza pogody (14 dni)</h3>
 
-        @if (Model.Rooms != null && Model.Rooms.Any())
+        <h3 class="mt-4">Prognoza pogody (14 dni)</h3>
+
+        @if (ViewBag.Forecast is JsonElement forecast && forecast.ValueKind == JsonValueKind.Array && forecast.GetArrayLength() > 0)
         {
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Typ pokoju</th>
-                        <th>Pojemność</th>
-                        <th>Cena za noc</th>
-                        <th>Opis</th>
-                        <th>Szczegóły</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var room in Model.Rooms)
+            <div class="row">
+                @foreach (var day in forecast.EnumerateArray())
+                {
+                    <div class="col-md-3 mb-3 border rounded p-2 text-center">
+                        <p><strong>@day.GetProperty("date").GetString()</strong></p>
+                        <img src="@day.GetProperty("day").GetProperty("condition").GetProperty("icon").GetString()" />
+                        <p>@day.GetProperty("day").GetProperty("condition").GetProperty("text").GetString()</p>
+                        <p>Średnia temp: @day.GetProperty("day").GetProperty("avgtemp_c").GetDouble() °C</p>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p>Nie udało się załadować pogody dla tej lokalizacji.</p>
+        }
+
+
+
+
+        <div class="col-md-6">
+            <h2 class="mb-2">@Model.Name</h2>
+            <p class="text-muted">@Model.City, @Model.Country</p>
+            <p><strong>Adres:</strong> @Model.Address</p>
+            <p><strong>Kontakt:</strong> @Model.ContactNumber</p>
+            <p><strong>Email:</strong> @Model.Email</p>
+            <p class="mb-3"><strong>Opis:</strong><br /> @Model.Description</p>
+
+            <p class="fw-bold text-primary fs-5">
+                @if (Model.Rooms != null && Model.Rooms.Any())
+                {
+                    var minPrice = Model.Rooms.Min(r => r.PricePerNight);
+                    <text>Od @minPrice zł / noc</text>
+                }
+                else
+                {
+                    <span>Brak pokoi</span>
+                }
+            </p>
+
+            <div class="mb-3">
+                <strong>Udogodnienia:</strong><br />
+                @if (Model.Amenities != null && Model.Amenities.Any())
+                {
+                    @foreach (var amenity in Model.Amenities)
                     {
-                        <tr>
-                            <td>@room.RoomType</td>
-                            <td>@room.Capacity</td>
-                            <td>@room.PricePerNight zł</td>
-                            <td>@room.Description</td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-primary"
+                        <span class="badge bg-light text-dark border me-1 mb-1">@amenity.Name</span>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">Brak udogodnień</span>
+                }
+            </div>
+
+            <div class="mb-3">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">Edytuj</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">Wróć do listy</a>
+            </div>
+            <div class="mb-4">
+                <a asp-controller="Rooms" asp-action="Create" asp-route-hotelId="@Model.Id" class="btn btn-primary">
+                    Dodaj pokój
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <h4 class="mb-3">Dostępne pokoje</h4>
+
+    @if (Model.Rooms != null && Model.Rooms.Any())
+    {
+        <div class="row row-cols-1 row-cols-md-2 g-3">
+            @foreach (var room in Model.Rooms)
+            {
+                <div class="col">
+                    <div class="card shadow-sm h-100">
+                        @if (!string.IsNullOrEmpty(room.ImagePath))
+                        {
+                            <img src="@room.ImagePath" class="card-img-top" style="height: 180px; object-fit: cover;" />
+                        }
+
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@room.RoomType</h5>
+                            <p class="card-text text-muted">Dla @room.Capacity osób</p>
+                            <p class="card-text small">@room.Description</p>
+                            <p class="fw-bold text-primary mb-2">@room.PricePerNight zł / noc</p>
+
+                            <div class="mt-auto">
+                                <button class="btn btn-sm btn-primary"
                                         data-bs-toggle="modal"
                                         data-bs-target="#roomModal"
+                                        data-room-id="@room.Id"
                                         data-roomtype="@room.RoomType"
                                         data-capacity="@room.Capacity"
                                         data-price="@room.PricePerNight"
                                         data-description="@room.Description"
-                                        data-amenities="@room.Amenities"
                                         data-image="@room.ImagePath">
-                                    Zobacz szczegóły
+                                    Szczegóły
                                 </button>
 
-                            </td>
-                            <td>
-                                <a asp-controller="Reservations"
-                                   asp-action="Create"
-                                   asp-route-roomId="@room.Id"
-                                   class="btn btn-success">
-                                    Zarezerwuj
-                                </a>
-                            </td>
+                                <a asp-controller="Reservations" asp-action="Create" asp-route-roomId="@room.Id" class="btn btn-sm btn-success">Zarezerwuj</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 
-                        </tr>
-                    }
-
-
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>Brak pokoi przypisanych do tego hotelu.</p>
-        }
-
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Address)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Address)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.City)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.City)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Country)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Country)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PricePerNight)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PricePerNight)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Amenities)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Amenities)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ContactNumber)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ContactNumber)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    else
+    {
+        <p class="text-muted">Ten hotel nie ma jeszcze żadnych pokoi.</p>
+    }
 </div>
 
 <div class="modal fade" id="roomModal" tabindex="-1" aria-labelledby="roomModalLabel" aria-hidden="true">
@@ -149,31 +151,27 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
             </div>
             <div class="modal-body">
-                <div class="text-center mb-3">
-                    <img id="modalImage" src="" alt="Zdjęcie pokoju" style="max-width: 100%; max-height: 300px;" />
+                <div class="mb-3 text-center">
+                    <img id="modalImage" src="" alt="Zdjęcie pokoju" class="img-fluid" style="max-height: 300px;" />
                 </div>
                 <p><strong>Typ pokoju:</strong> <span id="modalRoomType"></span></p>
-                <p><strong>Pojemność:</strong> <span id="modalCapacity"></span></p>
+                <p><strong>Pojemność:</strong> <span id="modalCapacity"></span> osób</p>
                 <p><strong>Cena:</strong> <span id="modalPrice"></span> zł</p>
                 <p><strong>Opis:</strong> <span id="modalDescription"></span></p>
-                <p><strong>Udogodnienia:</strong> <span id="modalAmenities"></span></p>
             </div>
-
         </div>
     </div>
 </div>
 
-
 @section Scripts {
     <script>
-        var modal = document.getElementById('roomModal');
+        const modal = document.getElementById('roomModal');
         modal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
+            const button = event.relatedTarget;
             document.getElementById('modalRoomType').textContent = button.getAttribute('data-roomtype');
             document.getElementById('modalCapacity').textContent = button.getAttribute('data-capacity');
             document.getElementById('modalPrice').textContent = button.getAttribute('data-price');
             document.getElementById('modalDescription').textContent = button.getAttribute('data-description');
-            document.getElementById('modalAmenities').textContent = button.getAttribute('data-amenities');
             document.getElementById('modalImage').src = button.getAttribute('data-image');
         });
     </script>

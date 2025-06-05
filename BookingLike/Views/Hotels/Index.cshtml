@@ -1,92 +1,61 @@
 ﻿@model IEnumerable<BookingLike.Models.Hotel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Lista hoteli";
 }
 
-<h1>Index</h1>
+<h2 class="mb-4">Znajdź swój hotel</h2>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Zdjęcie</th>
+<div class="mb-3">
+    <a class="btn btn-success" asp-action="Create">+ Dodaj nowy hotel</a>
+</div>
 
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Address)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.City)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Country)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PricePerNight)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Amenities)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ContactNumber)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-                <td>
-                    @if (!string.IsNullOrEmpty(item.ImagePath))
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach (var hotel in Model)
+    {
+        <div class="col">
+            <div class="card shadow-sm h-100">
+                @if (!string.IsNullOrEmpty(hotel.ImagePath))
+                {
+                    <img src="@hotel.ImagePath" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Hotel Image" />
+                }
+                else
+                {
+                    <div class="bg-secondary text-white text-center p-5">Brak zdjęcia</div>
+                }
+
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">@hotel.Name</h5>
+                    <p class="card-text text-muted mb-1">@hotel.City, @hotel.Country</p>
+                    <p class="card-text small mb-2">@hotel.Description</p>
+
+                    <p class="fw-bold text-primary mb-2">
+                        @(ViewBag.HotelMinPrices?[hotel.Id] > 0
+                            ? $"{ViewBag.HotelMinPrices[hotel.Id]} zł / noc"
+                            : "Brak pokoi")
+                    </p>
+
+                    @if (hotel.Amenities != null && hotel.Amenities.Any())
                     {
-                        <img src="@item.ImagePath" alt="Hotel image" style="max-height: 100px;" />
+                        <div class="mb-2">
+                            @foreach (var amenity in hotel.Amenities.Take(4))
+                            {
+                                <span class="badge bg-light text-dark border me-1 mb-1">@amenity.Name</span>
+                            }
+                            @if (hotel.Amenities.Count > 4)
+                            {
+                                <span class="badge bg-secondary">+@((hotel.Amenities.Count) - 4)</span>
+                            }
+                        </div>
                     }
-                </td>
 
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Address)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.City)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Country)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PricePerNight)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Amenities)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ContactNumber)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+                    <div class="mt-auto">
+                        <a asp-action="Details" asp-route-id="@hotel.Id" class="btn btn-outline-primary btn-sm me-1">Szczegóły</a>
+                        <a asp-action="Edit" asp-route-id="@hotel.Id" class="btn btn-outline-warning btn-sm me-1">Edytuj</a>
+                        <a asp-action="Delete" asp-route-id="@hotel.Id" class="btn btn-outline-danger btn-sm">Usuń</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

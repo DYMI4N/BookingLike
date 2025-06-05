@@ -9,6 +9,7 @@ using BookingLike.Data;
 using BookingLike.Models;
 using Microsoft.AspNetCore.Http;
 using System.IO;
+using System.Text.Json;
 
 
 namespace BookingLike.Controllers
@@ -25,8 +26,20 @@ namespace BookingLike.Controllers
         // GET: Hotels
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Hotels.ToListAsync());
+            var hotels = await _context.Hotels
+                .Include(h => h.Rooms)
+                .ToListAsync();
+
+            var hotelMinPrices = hotels.ToDictionary(
+                h => h.Id,
+                h => h.Rooms.Any() ? h.Rooms.Min(r => r.PricePerNight) : 0
+            );
+
+            ViewBag.HotelMinPrices = hotelMinPrices;
+
+            return View(hotels);
         }
+
 
         // GET: Hotels/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -37,19 +50,52 @@ namespace BookingLike.Controllers
             }
 
             var hotel = await _context.Hotels
-                .Include(h => h.Rooms) // Include related rooms
+                .Include(h => h.Rooms)
+                .Include(h => h.Amenities)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (hotel == null)
             {
                 return NotFound();
             }
 
+            ViewBag.MinPrice = hotel.Rooms.Any() ? hotel.Rooms.Min(r => r.PricePerNight) : 0;
+
+            try
+            {
+                string apiKey = "6dae3632795044e6bca64044250506";
+                string city = hotel.City;
+
+                if (!string.IsNullOrWhiteSpace(city))
+                {
+                    using var httpClient = new HttpClient();
+                    string url = $"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={city}&days=14&aqi=no&alerts=no";
+
+                    var response = await httpClient.GetStringAsync(url);
+                    var weatherData = JsonDocument.Parse(response);
+
+                    ViewBag.Forecast = weatherData.RootElement
+                        .GetProperty("forecast")
+                        .GetProperty("forecastday");
+                }
+            }
+            catch
+            {
+                ViewBag.Forecast = null;
+            }
+
             return View(hotel);
         }
+
+
 
         // GET: Hotels/Create
         public IActionResult Create()
         {
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem { Text = a.Name, Value = a.Id.ToString() })
+                .ToList();
+
             return View();
         }
 
@@ -58,11 +104,14 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Hotel hotel, IFormFile imageFile)
+        public async Task<IActionResult> Create(Hotel hotel, IFormFile imageFile,List<int>SelectedAmenityIds)
         {
             if (imageFile == null || imageFile.Length == 0)
             {
                 ViewBag.ImageError = "Zdjęcie hotelu jest wymagane.";
+                ViewBag.Amenities = _context.Amenities
+                    .Select(a => new SelectListItem { Text = a.Name, Value = a.Id.ToString() })
+                    .ToList();
                 return View(hotel);
             }
 
@@ -73,6 +122,10 @@ namespace BookingLike.Controllers
             {
                 await imageFile.CopyToAsync(stream);
             }
+
+            hotel.Amenities = _context.Amenities
+                .Where(a => SelectedAmenityIds.Contains(a.Id))
+                .ToList();
 
             hotel.ImagePath = "/uploads/" + fileName;
 
@@ -95,48 +148,93 @@ namespace BookingLike.Controllers
                 return NotFound();
             }
 
-            var hotel = await _context.Hotels.FindAsync(id);
+            var hotel = await _context.Hotels
+                .Include(h => h.Amenities)
+                .FirstOrDefaultAsync(h => h.Id == id);
+
             if (hotel == null)
             {
                 return NotFound();
             }
+
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem
+                {
+                    Text = a.Name,
+                    Value = a.Id.ToString()
+                }).ToList();
+
             return View(hotel);
         }
+
 
         // POST: Hotels/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Address,City,Country,PricePerNight,Description,Amenities,ContactNumber,Email")] Hotel hotel)
+        public async Task<IActionResult> Edit(int id, Hotel hotel, List<int> SelectedAmenityIds)
         {
             if (id != hotel.Id)
-            {
                 return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(hotel);
+                    var hotelToUpdate = await _context.Hotels
+                        .Include(h => h.Amenities)
+                        .FirstOrDefaultAsync(h => h.Id == id);
+
+                    if (hotelToUpdate == null)
+                        return NotFound();
+
+                    // aktualizacja pól ręcznie
+                    hotelToUpdate.Name = hotel.Name;
+                    hotelToUpdate.Address = hotel.Address;
+                    hotelToUpdate.City = hotel.City;
+                    hotelToUpdate.Country = hotel.Country;
+                    hotelToUpdate.Description = hotel.Description;
+                    hotelToUpdate.ContactNumber = hotel.ContactNumber;
+                    hotelToUpdate.Email = hotel.Email;
+
+                    // zaktualizuj Amenities
+                    var selectedAmenities = await _context.Amenities
+                        .Where(a => SelectedAmenityIds.Contains(a.Id))
+                        .ToListAsync();
+
+                    // EF śledzi zmiany – nie przypisuj nowej listy, tylko modyfikuj istniejącą
+                    hotelToUpdate.Amenities.Clear();
+                    foreach (var amenity in selectedAmenities)
+                    {
+                        hotelToUpdate.Amenities.Add(amenity);
+                    }
+
                     await _context.SaveChangesAsync();
+
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!HotelExists(hotel.Id))
-                    {
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
-                return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.Amenities = _context.Amenities
+                .Select(a => new SelectListItem
+                {
+                    Text = a.Name,
+                    Value = a.Id.ToString()
+                }).ToList();
+
             return View(hotel);
         }
+
+
+
 
         // GET: Hotels/Delete/5
         public async Task<IActionResult> Delete(int? id)

@@ -1,32 +1,32 @@
-using System.Diagnostics;
-using BookingLike.Models;
+using BookingLike.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace BookingLike.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly BookingLikeDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(BookingLikeDbContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
-        }
+            var hotels = await _context.Hotels
+                .Include(h => h.Rooms)
+                .Include(h => h.Amenities)
+                .ToListAsync();
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+            ViewBag.HotelMinPrices = hotels.ToDictionary(
+                h => h.Id,
+                h => h.Rooms.Any() ? h.Rooms.Min(r => r.PricePerNight) : 0
+            );
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(hotels);
         }
     }
 }
