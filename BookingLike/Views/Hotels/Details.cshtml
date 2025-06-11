@@ -19,28 +19,26 @@
             }
         </div>
 
-        <h3 class="mt-4">Prognoza pogody (14 dni)</h3>
-
-        <h3 class="mt-4">Prognoza pogody (14 dni)</h3>
-
         @if (ViewBag.Forecast is JsonElement forecast && forecast.ValueKind == JsonValueKind.Array && forecast.GetArrayLength() > 0)
         {
-            <div class="row">
+            <h4 class="mt-4 mb-2">Prognoza pogody – 14 dni</h4>
+            <div style="overflow-x: auto; white-space: nowrap;" class="py-2">
                 @foreach (var day in forecast.EnumerateArray())
                 {
-                    <div class="col-md-3 mb-3 border rounded p-2 text-center">
-                        <p><strong>@day.GetProperty("date").GetString()</strong></p>
-                        <img src="@day.GetProperty("day").GetProperty("condition").GetProperty("icon").GetString()" />
-                        <p>@day.GetProperty("day").GetProperty("condition").GetProperty("text").GetString()</p>
-                        <p>Średnia temp: @day.GetProperty("day").GetProperty("avgtemp_c").GetDouble() °C</p>
+                    <div style="display: inline-block; width: 140px; margin-right: 10px;" class="text-center border rounded p-2 bg-light">
+                        <div style="font-size: 0.85rem;"><strong>@day.GetProperty("date").GetString()</strong></div>
+                        <img src="@day.GetProperty("day").GetProperty("condition").GetProperty("icon").GetString()" style="height: 50px;" />
+                        <div style="font-size: 0.8rem;">@day.GetProperty("day").GetProperty("condition").GetProperty("text").GetString()</div>
+                        <div style="font-size: 0.8rem;">@day.GetProperty("day").GetProperty("avgtemp_c").GetDouble() °C</div>
                     </div>
                 }
             </div>
         }
         else
         {
-            <p>Nie udało się załadować pogody dla tej lokalizacji.</p>
+            <p class="text-muted">Nie udało się załadować pogody dla tej lokalizacji.</p>
         }
+
 
 
 

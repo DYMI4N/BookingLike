@@ -1,0 +1,50 @@
+﻿@page
+@model MyReservationsModel
+@{
+    ViewData["Title"] = "Moje rezerwacje";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (!Model.Reservations.Any())
+{
+    <p>Brak rezerwacji.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Hotel</th>
+                <th>Pokój</th>
+                <th>Od</th>
+                <th>Do</th>
+                <th>Status</th>
+                <th>Cena</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Reservations)
+            {
+                <tr>
+                    <td>@r.Room.Hotel.Name</td>
+                    <td>@r.Room.RoomType</td>
+                    <td>@r.StartDate.ToShortDateString()</td>
+                    <td>@r.EndDate.ToShortDateString()</td>
+                    <td>@r.Status</td>
+                    <td>@r.TotalPrice zł</td>
+                    <td>
+                       @if (r.Status == "Pending" || r.Status == "Paid")
+                            {
+                                <form asp-action="Cancel" method="post" asp-route-id="@r.Id">
+                                    <button type="submit" class="btn btn-danger btn-sm">Anuluj</button>
+                                </form>
+                            }
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

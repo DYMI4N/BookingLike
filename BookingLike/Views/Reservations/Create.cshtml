@@ -27,37 +27,18 @@
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="StartDate" class="control-label"></label>
-                <input asp-for="StartDate" class="form-control" />
-                <span asp-validation-for="StartDate" class="text-danger"></span>
+                <label for="dateRange">Zakres dat</label>
+                <input type="text" id="dateRange" class="form-control" />
             </div>
-            <p><strong>Jesteś zalogowany jako:</strong> @User.Identity.Name</p>
+            <input type="hidden" name="StartDate" id="StartDate" />
+            <input type="hidden" name="EndDate" id="EndDate" />
+            <input type="hidden" asp-for="RoomId" />
 
+            <input type="hidden" id="PricePerNight" value="@ViewBag.PricePerNight" />
+            <input type="hidden" id="TotalPriceHidden" name="TotalPrice" value="@Model.TotalPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" />
             <div class="form-group">
-                <label asp-for="EndDate" class="control-label"></label>
-                <input asp-for="EndDate" class="form-control" />
-                <span asp-validation-for="EndDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="RoomId" class="control-label"></label>
-                <input asp-for="RoomId" class="form-control" readonly />
-            </div>
-
-
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="TotalPrice" class="control-label"></label>
-                <input asp-for="TotalPrice" class="form-control" />
-                <span asp-validation-for="TotalPrice" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label for="TotalPriceDisplay">Cena całkowita</label>
+                <input type="text" id="TotalPriceDisplay" class="form-control" readonly />
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
@@ -72,4 +53,31 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const picker = new Litepicker({
+                element: document.getElementById('dateRange'),
+                singleMode: false,
+                format: 'YYYY-MM-DD',
+                lang: 'pl-PL',
+                minDate: new Date(),
+                lockDays: @Html.Raw(Json.Serialize(ViewBag.BookedDates ?? new List<string>())),
+                setup: (picker) => {
+                    picker.on('selected', (start, end) => {
+                        const days = end.diff(start, 'days');
+                        const price = parseFloat(document.getElementById("PricePerNight").value);
+                        const total = days > 0 ? (price * days).toFixed(2) : 0;
+
+                        document.getElementById("TotalPriceHidden").value = total.replace(".", ",");
+                        document.getElementById("TotalPriceDisplay").value = total.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' });
+                        document.getElementById("StartDate").value = start.format('YYYY-MM-DD');
+                        document.getElementById("EndDate").value = end.format('YYYY-MM-DD');
+                    });
+                }
+            });
+        });
+    </script>
+
 }
+
+

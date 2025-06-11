@@ -60,16 +60,43 @@ namespace BookingLike.Controllers
             {
                 return RedirectToAction("Login", "Account");
             }
+
+            var room = await _context.Rooms.FindAsync(roomId);
+            if (room == null)
+            {
+                return NotFound();
+            }
+
             var reservation = new Reservation
             {
                 RoomId = roomId,
                 UserId = user.Id,
-                StartDate = DateTime.Now,
-                EndDate = DateTime.Now.AddDays(1)
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today.AddDays(1)
             };
+
+            ViewBag.PricePerNight = room.PricePerNight;
+
+            var reservations = await _context.Reservations
+                .Where(r => r.RoomId == roomId && r.Status != "Cancelled")
+                .ToListAsync();
+
+            var bookedDates = new List<string>();
+            foreach (var res in reservations)
+            {
+                for (var date = res.StartDate.Date; date < res.EndDate.Date; date = date.AddDays(1))
+                {
+                    bookedDates.Add(date.ToString("yyyy-MM-dd"));
+                }
+            }
+
+            ViewBag.BookedDates = bookedDates;
 
             return View(reservation);
         }
+
+
+
 
 
         // POST: Reservations/Create
@@ -79,19 +106,49 @@ namespace BookingLike.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Reservation reservation)
         {
-            // Usuwamy wymaganie pól, które będą przypisane ręcznie
             ModelState.Remove("User");
             ModelState.Remove("UserId");
             ModelState.Remove("Room");
 
             if (ModelState.IsValid)
             {
+                reservation.StartDate = reservation.StartDate.Date;
+                reservation.EndDate = reservation.EndDate.Date;
+
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
                 {
                     return RedirectToAction("Login", "Account");
                 }
 
+                bool isOverlapping = await _context.Reservations
+                    .AnyAsync(r =>
+                        r.RoomId == reservation.RoomId &&
+                        r.Status != "Cancelled" &&
+                        reservation.StartDate < r.EndDate &&
+                        reservation.EndDate > r.StartDate
+                    );
+
+                if (isOverlapping)
+                {
+                    ModelState.AddModelError(string.Empty, "Wybrany pokój jest już zarezerwowany w tym terminie.");
+                    return View(reservation);
+                }
+
+                var room = await _context.Rooms.FindAsync(reservation.RoomId);
+                if (room == null)
+                {
+                    ModelState.AddModelError("", "Nie znaleziono pokoju.");
+                    return View(reservation);
+                }
+                var days = (decimal)(reservation.EndDate - reservation.StartDate).TotalDays;
+                if (days <= 0)
+                {
+                    ModelState.AddModelError("", "Nieprawidłowy zakres dat.");
+                    return View(reservation);
+                }
+
+                reservation.TotalPrice = Math.Round(Decimal.Multiply((decimal)room.PricePerNight, days),2);
                 reservation.UserId = user.Id;
                 reservation.CreatedAt = DateTime.Now;
                 reservation.Status = "Pending";
@@ -101,8 +158,11 @@ namespace BookingLike.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+
             return View(reservation);
         }
+
+
 
 
 
@@ -200,31 +260,40 @@ namespace BookingLike.Controllers
         {
             return _context.Reservations.Any(e => e.Id == id);
         }
-#if DEBUG
-        [HttpGet]
-        public async Task<IActionResult> TestCreate()
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Pay(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Content("User not logged in");
-
-            var testReservation = new Reservation
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null || reservation.Status != "Pending")
             {
-                RoomId = 1, // zakładamy że pokój o ID = 1 istnieje
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddDays(2),
-                CreatedAt = DateTime.Now,
-                Status = "Pending",
-                TotalPrice = 500,
-                UserId = user.Id
-            };
+                return NotFound();
+            }
 
-            _context.Reservations.Add(testReservation);
+            reservation.Status = "Paid";
             await _context.SaveChangesAsync();
 
-            return Content("Rezerwacja testowa została dodana.");
+            return RedirectToPage("/Account/Manage/MyReservations", new { area = "Identity" });
         }
-#endif
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null || (reservation.Status != "Pending" && reservation.Status != "Paid"))
+            {
+                return NotFound();
+            }
+
+            reservation.Status = "Cancelled";
+            await _context.SaveChangesAsync();
+
+            return RedirectToPage("/Account/Manage/MyReservations", new { area = "Identity" });
+        }
+
+
 
     }
 

@@ -3,12 +3,37 @@
 @{
     ViewData["Title"] = "Lista hoteli";
 }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Znajdź swój hotel</h2>
 
-<h2 class="mb-4">Znajdź swój hotel</h2>
+    <div>
+        <a class="btn btn-success me-2" asp-action="Create">+ Dodaj nowy hotel</a>
 
-<div class="mb-3">
-    <a class="btn btn-success" asp-action="Create">+ Dodaj nowy hotel</a>
+        <div class="dropdown d-inline">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Sortuj: @{
+                    string label = ViewBag.CurrentSort switch
+                    {
+                        "price_asc" => "Cena rosnąco",
+                        "price_desc" => "Cena malejąco",
+                        "name_desc" => "Nazwa Z-A",
+                        _ => "Nazwa A-Z"
+                    };
+                }
+                @label
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" asp-action="Index" asp-route-sortOrder="price_asc">Cena rosnąco</a></li>
+                <li><a class="dropdown-item" asp-action="Index" asp-route-sortOrder="price_desc">Cena malejąco</a></li>
+                <li><a class="dropdown-item" asp-action="Index" asp-route-sortOrder="name_asc">Nazwa A-Z</a></li>
+                <li><a class="dropdown-item" asp-action="Index" asp-route-sortOrder="name_desc">Nazwa Z-A</a></li>
+            </ul>
+        </div>
+    </div>
 </div>
+
+
+
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     @foreach (var hotel in Model)
@@ -29,11 +54,17 @@
                     <p class="card-text text-muted mb-1">@hotel.City, @hotel.Country</p>
                     <p class="card-text small mb-2">@hotel.Description</p>
 
-                    <p class="fw-bold text-primary mb-2">
-                        @(ViewBag.HotelMinPrices?[hotel.Id] > 0
-                            ? $"{ViewBag.HotelMinPrices[hotel.Id]} zł / noc"
-                            : "Brak pokoi")
-                    </p>
+                    @if (ViewBag.HotelMinPrices[hotel.Id] > 0)
+                    {
+                        <p class="text-primary fw-bold">
+                            @($"{ViewBag.HotelMinPrices[hotel.Id]:0.00} zł / noc")
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted fw-bold">Brak pokoi</p>
+                    }
+
 
                     @if (hotel.Amenities != null && hotel.Amenities.Any())
                     {

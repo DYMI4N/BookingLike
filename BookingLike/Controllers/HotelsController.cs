@@ -24,21 +24,51 @@ namespace BookingLike.Controllers
         }
 
         // GET: Hotels
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder)
         {
             var hotels = await _context.Hotels
                 .Include(h => h.Rooms)
+                .Include(h => h.Amenities)
                 .ToListAsync();
 
             var hotelMinPrices = hotels.ToDictionary(
                 h => h.Id,
-                h => h.Rooms.Any() ? h.Rooms.Min(r => r.PricePerNight) : 0
+                h => h.Rooms.Any() ? h.Rooms.Min(r => r.PricePerNight) : 0.0
             );
 
+            hotels = sortOrder switch
+            {
+                "price_asc" => hotels.OrderBy(h => hotelMinPrices[h.Id]).ToList(),
+                "price_desc" => hotels.OrderByDescending(h => hotelMinPrices[h.Id]).ToList(),
+                "name_desc" => hotels.OrderByDescending(h => h.Name).ToList(),
+                "name_asc" or _ => hotels.OrderBy(h => h.Name).ToList(),
+            };
+
             ViewBag.HotelMinPrices = hotelMinPrices;
+            ViewBag.CurrentSort = sortOrder;
 
             return View(hotels);
         }
+
+        public static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return text;
+
+            var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+
+            foreach (var c in normalized)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        }
+
 
 
         // GET: Hotels/Details/5
@@ -64,12 +94,14 @@ namespace BookingLike.Controllers
             try
             {
                 string apiKey = "6dae3632795044e6bca64044250506";
-                string city = hotel.City;
+                string city = RemoveDiacritics(hotel.City + ", Poland");
+                string encodedCity = Uri.EscapeDataString(city);
+
 
                 if (!string.IsNullOrWhiteSpace(city))
                 {
                     using var httpClient = new HttpClient();
-                    string url = $"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={city}&days=14&aqi=no&alerts=no";
+                    string url = $"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={encodedCity}&days=14&aqi=no&alerts=no";
 
                     var response = await httpClient.GetStringAsync(url);
                     var weatherData = JsonDocument.Parse(response);
