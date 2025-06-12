@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BookingLike.Data;
 using BookingLike.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookingLike.Controllers
 {
@@ -68,6 +69,7 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> Create(Room room, List<IFormFile> ImageFiles, List<int> SelectedAmenityIds)
         {
             if (ImageFiles != null && ImageFiles.Count > 0)
@@ -146,6 +148,7 @@ namespace BookingLike.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> Edit(int id, Room room, List<int> SelectedAmenityIds)
         {
             if (id != room.Id)
@@ -229,6 +232,7 @@ namespace BookingLike.Controllers
         // POST: Rooms/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var room = await _context.Rooms.FindAsync(id);

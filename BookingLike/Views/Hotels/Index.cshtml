@@ -7,8 +7,10 @@
     <h2 class="mb-0">Znajdź swój hotel</h2>
 
     <div>
-        <a class="btn btn-success me-2" asp-action="Create">+ Dodaj nowy hotel</a>
-
+        @if (User.IsInRole("Moderator"))
+        {
+            <a class="btn btn-success me-2" asp-action="Create">+ Dodaj nowy hotel</a>
+        }
         <div class="dropdown d-inline">
             <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 Sortuj: @{
@@ -82,11 +84,39 @@
 
                     <div class="mt-auto">
                         <a asp-action="Details" asp-route-id="@hotel.Id" class="btn btn-outline-primary btn-sm me-1">Szczegóły</a>
-                        <a asp-action="Edit" asp-route-id="@hotel.Id" class="btn btn-outline-warning btn-sm me-1">Edytuj</a>
-                        <a asp-action="Delete" asp-route-id="@hotel.Id" class="btn btn-outline-danger btn-sm">Usuń</a>
+                        @if (User.IsInRole("Moderator"))
+                        {
+                            <a asp-action="Edit" asp-route-id="@hotel.Id" class="btn btn-outline-warning btn-sm me-1">Edytuj</a>
+                            <a asp-action="Delete" asp-route-id="@hotel.Id" class="btn btn-outline-danger btn-sm">Usuń</a>
+                        }
                     </div>
                 </div>
             </div>
         </div>
     }
 </div>
+@if (TempData["ReservationSuccess"] != null && (bool)TempData["ReservationSuccess"])
+{
+    <div class="modal fade" id="reservationSuccessModal" tabindex="-1" aria-labelledby="reservationSuccessLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header">
+                    <h5 class="modal-title w-100" id="reservationSuccessLabel">Sukces</h5>
+                </div>
+                <div class="modal-body">
+                    Twoja rezerwacja została pomyślnie złożona!
+                    Należy ją opłacić wchodząc w "moje rezerwacje".
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Zamknij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var successModal = new bootstrap.Modal(document.getElementById('reservationSuccessModal'));
+        successModal.show();
+    </script>
+}
+

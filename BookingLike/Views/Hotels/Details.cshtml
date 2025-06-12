@@ -79,13 +79,18 @@
             </div>
 
             <div class="mb-3">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">Edytuj</a>
-                <a asp-action="Index" class="btn btn-outline-secondary">Wróć do listy</a>
+                @if (User.IsInRole("Moderator"))
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">Edytuj</a>
+                }
             </div>
             <div class="mb-4">
-                <a asp-controller="Rooms" asp-action="Create" asp-route-hotelId="@Model.Id" class="btn btn-primary">
-                    Dodaj pokój
-                </a>
+                @if (User.IsInRole("Moderator"))
+                {
+                    <a asp-controller="Rooms" asp-action="Create" asp-route-hotelId="@Model.Id" class="btn btn-primary">
+                        Dodaj pokój
+                    </a>
+                }
             </div>
 
         </div>

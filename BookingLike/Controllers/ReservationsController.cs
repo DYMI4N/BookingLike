@@ -155,7 +155,9 @@ namespace BookingLike.Controllers
 
                 _context.Add(reservation);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                TempData["ReservationSuccess"] = true;
+                return RedirectToAction("Index", "Hotels");
+
             }
 
 

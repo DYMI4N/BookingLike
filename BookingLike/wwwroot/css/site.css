@@ -18,5 +18,29 @@ html {
 }
 
 body {
-  margin-bottom: 60px;
+    margin-bottom: 60px;
+    background-color: #f7f9fc;
+}
+
+.hotel-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    background-color: white;
+    transition: transform 0.2s ease-in-out;
+}
+
+    .hotel-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .hotel-card img {
+        object-fit: cover;
+        height: 200px;
+        width: 100%;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+
+.hotel-info {
+    padding: 16px;
 }

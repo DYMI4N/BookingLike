@@ -35,11 +35,19 @@ else
                     <td>@r.Status</td>
                     <td>@r.TotalPrice zł</td>
                     <td>
+
+                        @if (r.Status == "Pending")
+                        {
+                            <form asp-controller="Reservations" asp-action="Pay" method="post" asp-route-id="@r.Id" class="d-inline">
+                                <button type="submit" class="btn btn-success btn-sm">Opłać</button>
+                            </form>
+                        }
                        @if (r.Status == "Pending" || r.Status == "Paid")
                             {
-                                <form asp-action="Cancel" method="post" asp-route-id="@r.Id">
-                                    <button type="submit" class="btn btn-danger btn-sm">Anuluj</button>
-                                </form>
+                            <form asp-controller="Reservations" asp-action="Cancel" method="post" asp-route-id="@r.Id" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm">Anuluj</button>
+                            </form>
+
                             }
 
                     </td>

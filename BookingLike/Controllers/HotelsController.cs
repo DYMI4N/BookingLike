@@ -10,6 +10,7 @@ using BookingLike.Models;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace BookingLike.Controllers
@@ -134,6 +135,7 @@ namespace BookingLike.Controllers
         // POST: Hotels/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Moderator")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Hotel hotel, IFormFile imageFile,List<int>SelectedAmenityIds)
@@ -173,6 +175,7 @@ namespace BookingLike.Controllers
 
 
         // GET: Hotels/Edit/5
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -203,6 +206,7 @@ namespace BookingLike.Controllers
         // POST: Hotels/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Moderator")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Hotel hotel, List<int> SelectedAmenityIds)
@@ -269,6 +273,7 @@ namespace BookingLike.Controllers
 
 
         // GET: Hotels/Delete/5
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -289,6 +294,7 @@ namespace BookingLike.Controllers
         // POST: Hotels/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Moderator")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var hotel = await _context.Hotels.FindAsync(id);
